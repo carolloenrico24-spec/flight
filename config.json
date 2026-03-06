@@ -1,0 +1,10 @@
+{
+  "global_thresholds": {
+    "alert_drop_percent": 10,
+    "alert_drop_absolute": 30
+  },
+
+  "notification_recipients": [],
+
+  "flights": []
+}

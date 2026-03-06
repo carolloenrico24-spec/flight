@@ -1,0 +1,42 @@
+name: ✈️ Flight Monitor
+
+on:
+  schedule:
+    # Ogni 6 ore: 6:00, 12:00, 18:00, 00:00 UTC
+    - cron: '0 6,12,18,0 * * *'
+  workflow_dispatch:
+    # Permette di lanciare il check manualmente da GitHub Actions
+
+jobs:
+  check-flights:
+    runs-on: ubuntu-latest
+    name: Controlla prezzi voli
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installa dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Esegui Flight Monitor
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: python flight_monitor.py
+
+      - name: Salva storico prezzi
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: price-history-${{ github.run_number }}
+          path: |
+            price_history.json
+            flight_monitor.log
+          retention-days: 30
