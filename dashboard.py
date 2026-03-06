@@ -1,6 +1,3 @@
-"""
-✈️ Flight Monitor Dashboard
-"""
 
 import json
 import os
