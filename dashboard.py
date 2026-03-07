@@ -33,6 +33,9 @@ hr { border-color: #1e1e30; }
 .log-box { background:#07070d; border:1px solid #1e1e30; border-radius:10px; padding:1rem; font-family:'DM Mono',monospace; font-size:0.72rem; color:#556; max-height:220px; overflow-y:auto; white-space:pre-wrap; line-height:1.6; }
 .section-title { font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700; color:#e8e8f0; margin-bottom:0.8rem; margin-top:1.2rem; padding-bottom:6px; border-bottom:1px solid #1e1e30; }
 .date-hint { background:#0f0f1a; border:1px solid #1e1e2e; border-radius:6px; padding:8px 12px; font-size:0.75rem; color:#556; margin-top:4px; }
+.block-label { font-size:0.73rem; color:#555570; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:3px; margin-top:10px; }
+.soglia-box { background:#0d0d1f; border:1px solid #2a2a4a; border-radius:10px; padding:12px 14px; margin-top:8px; }
+.soglia-title { font-family:'Syne',sans-serif; font-size:0.8rem; font-weight:700; color:#4a72de; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.08em; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -214,7 +217,6 @@ def check_env():
     return len(missing) == 0, missing
 
 
-# Session state
 if "orig_sel" not in st.session_state:
     st.session_state.orig_sel = None
 if "dest_sel" not in st.session_state:
@@ -230,13 +232,13 @@ with st.sidebar:
     env_ok, missing_vars = check_env()
 
     if env_ok:
-        st.success("✓ Credenziali OK")
+        st.success("Credenziali OK")
     else:
         st.warning("Mancano: " + ", ".join(missing_vars))
 
     st.divider()
 
-    if st.button("▶ Esegui Check Ora", use_container_width=True, type="primary"):
+    if st.button("Esegui Check Ora", use_container_width=True, type="primary"):
         if not env_ok:
             st.error("Configura le credenziali nel file .env")
         else:
@@ -253,23 +255,12 @@ with st.sidebar:
 
     st.divider()
 
-    with st.expander("Soglie Globali"):
-        thresh = config.get("global_thresholds", {})
-        np_ = st.number_input("Alert se calo %", 1, 50, int(thresh.get("alert_drop_percent", 10)))
-        na_ = st.number_input("Alert se calo EUR", 1, 500, int(thresh.get("alert_drop_absolute", 30)))
-        if st.button("Salva soglie", use_container_width=True):
-            config["global_thresholds"]["alert_drop_percent"] = np_
-            config["global_thresholds"]["alert_drop_absolute"] = na_
-            save_config(config)
-            st.success("Salvato!")
-            st.rerun()
-
-    st.divider()
+    # ── FORM AGGIUNGI VOLO ────────────────────────────────────────────────────
     st.markdown('<div class="meta-label">Aggiungi volo</div>', unsafe_allow_html=True)
     st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-    # Ricerca aeroporto partenza
-    st.markdown('<div style="font-size:0.73rem;color:#555570;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Partenza</div>', unsafe_allow_html=True)
+    # 1. AEROPORTO PARTENZA
+    st.markdown('<div class="block-label">1. Partenza</div>', unsafe_allow_html=True)
     orig_q = st.text_input("Cerca partenza", placeholder="Milano, MXP, Roma...", key="orig_q", label_visibility="collapsed")
     if orig_q:
         res = search_airports(orig_q)
@@ -289,10 +280,10 @@ with st.sidebar:
         c, n, co = st.session_state.orig_sel
         st.markdown('<div class="airport-chip"><span class="airport-code">' + c + '</span> &nbsp;' + n + '</div>', unsafe_allow_html=True)
 
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-    # Ricerca aeroporto destinazione
-    st.markdown('<div style="font-size:0.73rem;color:#555570;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Destinazione</div>', unsafe_allow_html=True)
+    # 2. AEROPORTO DESTINAZIONE
+    st.markdown('<div class="block-label">2. Destinazione</div>', unsafe_allow_html=True)
     dest_q = st.text_input("Cerca destinazione", placeholder="New York, JFK, Tokyo...", key="dest_q", label_visibility="collapsed")
     if dest_q:
         res2 = search_airports(dest_q)
@@ -312,12 +303,14 @@ with st.sidebar:
         c2, n2, co2 = st.session_state.dest_sel
         st.markdown('<div class="airport-chip"><span class="airport-code">' + c2 + '</span> &nbsp;' + n2 + '</div>', unsafe_allow_html=True)
 
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-    lbl = st.text_input("Etichetta", placeholder="Vacanza estate NY", key="lbl")
+    # 3. ETICHETTA
+    st.markdown('<div class="block-label">3. Etichetta (opzionale)</div>', unsafe_allow_html=True)
+    lbl = st.text_input("Etichetta", placeholder="Es. Vacanza estate Tokyo", key="lbl", label_visibility="collapsed")
 
-    # Date andata
-    st.markdown('<div style="font-size:0.73rem;color:#555570;text-transform:uppercase;letter-spacing:0.1em;margin:8px 0 3px;">Periodo andata</div>', unsafe_allow_html=True)
+    # 4. DATE ANDATA
+    st.markdown('<div class="block-label">4. Periodo andata</div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
         d_from = st.date_input("Dal", value=date.today() + timedelta(30), min_value=date.today(), key="d_from", label_visibility="collapsed")
@@ -328,10 +321,10 @@ with st.sidebar:
         n_d = min((d_to - d_from).days + 1, 5)
         st.markdown('<div class="date-hint">Controllerai ' + str(n_d) + ' date nel periodo</div>', unsafe_allow_html=True)
 
-    # Ritorno
+    # 5. RITORNO
     use_ret = st.checkbox("Volo di ritorno", key="use_ret")
     if use_ret:
-        st.markdown('<div style="font-size:0.73rem;color:#555570;text-transform:uppercase;letter-spacing:0.1em;margin:6px 0 3px;">Periodo ritorno</div>', unsafe_allow_html=True)
+        st.markdown('<div class="block-label">5. Periodo ritorno</div>', unsafe_allow_html=True)
         col3, col4 = st.columns(2)
         with col3:
             r_from = st.date_input("Ritorno dal", value=d_to + timedelta(7), min_value=d_from, key="r_from", label_visibility="collapsed")
@@ -341,15 +334,34 @@ with st.sidebar:
         r_from = None
         r_to = None
 
-    col_a, col_b = st.columns(2)
-    with col_a:
-        adults = st.number_input("Adulti", 1, 9, 1, key="adults")
-    with col_b:
-        max_p = st.number_input("Max EUR", 0, 9999, 0, key="max_p")
+    # 6. ADULTI
+    st.markdown('<div class="block-label">6. Passeggeri</div>', unsafe_allow_html=True)
+    adults = st.number_input("Adulti", 1, 9, 1, key="adults", label_visibility="collapsed")
 
-    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+    # 7. SOGLIA PREZZO + REGOLE ALERT (blocco visivo unico)
+    st.markdown('<div class="block-label">7. Prezzo e soglie di alert</div>', unsafe_allow_html=True)
+    st.markdown('<div class="soglia-box">', unsafe_allow_html=True)
 
-    if st.button("Aggiungi volo", use_container_width=True, type="primary"):
+    st.markdown('<div class="soglia-title">Soglia prezzo massimo</div>', unsafe_allow_html=True)
+    max_p = st.number_input("Avvisami se il prezzo scende sotto (EUR)", 0, 9999, 0, key="max_p")
+    if max_p > 0:
+        st.markdown('<div class="date-hint">Alert immediato se prezzo sotto EUR ' + str(max_p) + ' (funziona dal primo check)</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="date-hint">Nessuna soglia fissa. Imposta 0 per usare solo le regole percentuali sotto.</div>', unsafe_allow_html=True)
+
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+    st.markdown('<div class="soglia-title">Regole calo automatico</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:0.72rem;color:#444;margin-bottom:8px;">Alert anche se il prezzo cala rispetto allo storico accumulato</div>', unsafe_allow_html=True)
+
+    thresh = config.get("global_thresholds", {})
+    alert_pct = st.number_input("Alert se calo di %", 1, 50, int(thresh.get("alert_drop_percent", 10)), key="alert_pct")
+    alert_eur = st.number_input("Alert se calo di EUR", 1, 500, int(thresh.get("alert_drop_absolute", 30)), key="alert_eur")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    if st.button("AGGIUNGI VOLO", use_container_width=True, type="primary"):
         orig = st.session_state.orig_sel
         dest = st.session_state.dest_sel
         if not orig:
@@ -361,11 +373,16 @@ with st.sidebar:
         elif d_to < d_from:
             st.error("La data fine deve essere dopo la data inizio")
         else:
+            # Salva soglie globali aggiornate
+            config["global_thresholds"]["alert_drop_percent"] = alert_pct
+            config["global_thresholds"]["alert_drop_absolute"] = alert_eur
+
             out_dates = generate_dates(d_from, d_to)
             if use_ret and r_from:
                 ret_dates = generate_dates(r_from, r_to)
             else:
                 ret_dates = [None]
+
             label = lbl if lbl else orig[0] + " -> " + dest[0]
             added = 0
             for od in out_dates:
@@ -379,6 +396,8 @@ with st.sidebar:
                         "date": od,
                         "adults": adults,
                         "currency": "EUR",
+                        "alert_drop_percent": alert_pct,
+                        "alert_drop_absolute": alert_eur,
                     }
                     if rd:
                         entry["return_date"] = rd
@@ -386,6 +405,7 @@ with st.sidebar:
                         entry["max_price"] = max_p
                     config["flights"].append(entry)
                     added += 1
+
             save_config(config)
             st.session_state.orig_sel = None
             st.session_state.dest_sel = None
@@ -433,7 +453,6 @@ with tab_flights:
         except Exception:
             has_plotly = False
 
-        # Raggruppa per label
         groups = {}
         for i, f in enumerate(flights):
             lbl2 = f.get("label", flight_key(f))
@@ -443,7 +462,7 @@ with tab_flights:
 
         for label, group in groups.items():
             f0 = group[0][1]
-            st.markdown('<div style="font-family:Syne,sans-serif;font-size:1rem;font-weight:700;color:#e8e8f0;margin:16px 0 8px;padding-left:4px;border-left:3px solid #2a52be;">' + label + ' <span style="font-size:0.72rem;color:#444;font-weight:400;margin-left:8px;">' + f0["origin"] + ' → ' + f0["destination"] + ' · ' + str(len(group)) + ' data/e</span></div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-family:Syne,sans-serif;font-size:1rem;font-weight:700;color:#e8e8f0;margin:16px 0 8px;padding-left:4px;border-left:3px solid #2a52be;">' + label + ' <span style="font-size:0.72rem;color:#444;font-weight:400;margin-left:8px;">' + f0["origin"] + " → " + f0["destination"] + " · " + str(len(group)) + ' data/e</span></div>', unsafe_allow_html=True)
 
             for i, f in group:
                 k = flight_key(f)
@@ -468,9 +487,13 @@ with tab_flights:
                         ds = ds + " → " + f["return_date"]
                     on = f.get("origin_name", f["origin"])
                     dn = f.get("destination_name", f["destination"])
+                    soglie_info = ""
+                    if f.get("max_price"):
+                        soglie_info = soglie_info + '<span class="tag" style="margin-right:4px;">soglia EUR' + str(f["max_price"]) + '</span>'
+                    if f.get("alert_drop_percent"):
+                        soglie_info = soglie_info + '<span class="tag" style="margin-right:4px;">-' + str(f["alert_drop_percent"]) + '%</span>'
                     alert_tag = '<span class="tag-alert">SOTTO SOGLIA</span>' if is_alert else '<span class="tag-ok">ok</span>'
-                    max_tag = '<span class="tag" style="margin-left:5px;">Max EUR' + str(f["max_price"]) + '</span>' if f.get("max_price") else ""
-                    st.markdown('<div class="flight-card"><div style="font-size:0.95rem;font-weight:600;color:#e8e8f0;">📅 ' + ds + '</div><div style="font-size:0.72rem;color:#555570;margin-top:4px;">' + f["origin"] + ' ' + on + ' → ' + f["destination"] + ' ' + dn + ' · ' + str(f.get("adults", 1)) + ' pax</div><div style="margin-top:8px;">' + alert_tag + max_tag + '</div></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="flight-card"><div style="font-size:0.95rem;font-weight:600;color:#e8e8f0;">📅 ' + ds + '</div><div style="font-size:0.72rem;color:#555570;margin-top:4px;">' + f["origin"] + ' ' + on + ' → ' + f["destination"] + ' ' + dn + ' · ' + str(f.get("adults", 1)) + ' pax</div><div style="margin-top:8px;">' + alert_tag + '</div><div style="margin-top:6px;">' + soglie_info + '</div></div>', unsafe_allow_html=True)
 
                 with cp:
                     if s["current"]:
