@@ -213,7 +213,10 @@ with st.sidebar:
 
     config = load_config()
     env_ok, missing_vars = check_env()
-    st.success("✓ Credenziali OK") if env_ok else st.warning(f"⚠️ Mancano: {', '.join(missing_vars)}")
+    if env_ok:
+    st.success("✓ Credenziali OK")
+else:
+    st.warning(f"⚠️ Mancano: {', '.join(missing_vars)}")
 
     st.divider()
 
