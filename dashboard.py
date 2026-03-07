@@ -1,3 +1,7 @@
+"""
+✈️ Flight Monitor Dashboard
+"""
+
 import json
 import os
 import subprocess
